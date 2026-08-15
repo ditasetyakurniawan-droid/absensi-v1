@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # 1. Database MySQL (Mock DB Lokal)
+  db:
+    image: mysql:8.0
+    container_name: absensi_db_local
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: dita12345
+      MYSQL_DATABASE: db_absensi
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Automatis import schema saat container DB pertama kali dibuat
+      - ./backend/db/migrations/000001_init_schema.up.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # 2. Backend Go (Build dari Dockerfile backend)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: absensi_backend_local
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=dita12345
+      - DB_NAME=db_absensi
+      - SERVER_PORT=8080
+    depends_on:
+      - db
+
+  # 3. Frontend React/Nginx (Build dari Dockerfile frontend)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: absensi_frontend_local
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:

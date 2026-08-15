@@ -1,10 +1,11 @@
 # Stage 1: Build Stage (Golang 1.22 Alpine)
-FROM golang:1.22-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
 # Copy dependency files
 COPY go.mod go.sum ./
+ENV GOTOOLCHAIN=auto
 RUN go mod download
 
 # Copy source code
