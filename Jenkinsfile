@@ -19,14 +19,17 @@ pipeline {
         stage('SonarQube Code Analysis') {
             steps {
                 script {
+                    // Mengambil path biner sonar-scanner dari Manage Jenkins > Tools
+                    def scannerHome = tool 'sonar-scanner'
+                    
                     withSonarQubeEnv('SonarQube') {
-                        sh '''
-                            sonar-scanner \
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
                               -Dsonar.projectKey=absensi-sholat-rfid \
                               -Dsonar.sources=backend,frontend/src \
                               -Dsonar.host.url=${SONAR_HOST_URL} \
                               -Dsonar.login=${SONAR_TOKEN}
-                        '''
+                        """
                     }
                 }
             }
