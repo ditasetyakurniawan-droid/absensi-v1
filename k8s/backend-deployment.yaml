@@ -49,6 +49,8 @@ kind: Service
 metadata:
   name: absensi-backend-service
   namespace: test-app
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: 192.168.100.67
 spec:
   type: LoadBalancer
   ports:

@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 
+// Ambil URL Backend dari Environment Variable (Vite/React)
+// Jika variabel VITE_API_BASE_URL tidak diset, otomatis memakai fallback localhost
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
 export default function Dashboard() {
   const [stats, setStats] = useState({ total_students: 0, current_prayer: '', present_count: 0, recent_taps: [] });
   const [activeTab, setActiveTab] = useState('daily'); // 'daily' atau 'monthly'
@@ -18,7 +22,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch('http://localhost:8080/api/v1/dashboard/today');
+        const res = await fetch(`${API_BASE_URL}/api/v1/dashboard/today`);
         const data = await res.json();
         setStats(data);
       } catch (err) {
@@ -33,7 +37,7 @@ export default function Dashboard() {
   // Fetch Laporan Harian
   useEffect(() => {
     if (activeTab === 'daily') {
-      let url = `http://localhost:8080/api/v1/reports/attendance?date=${filterDate}`;
+      let url = `${API_BASE_URL}/api/v1/reports/attendance?date=${filterDate}`;
       if (filterPrayer) url += `&prayer=${filterPrayer}`;
       fetch(url).then(res => res.json()).then(data => setReports(data.records || []));
     }
@@ -42,7 +46,7 @@ export default function Dashboard() {
   // Fetch Laporan Bulanan
   useEffect(() => {
     if (activeTab === 'monthly') {
-      fetch(`http://localhost:8080/api/v1/reports/monthly?month=${filterMonth}&year=${filterYear}`)
+      fetch(`${API_BASE_URL}/api/v1/reports/monthly?month=${filterMonth}&year=${filterYear}`)
         .then(res => res.json())
         .then(data => setMonthlyReports(data.records || []));
     }
