@@ -19,7 +19,6 @@ pipeline {
         stage('SonarQube Code Analysis') {
             steps {
                 script {
-                    // Mengambil path biner sonar-scanner dari Manage Jenkins > Tools
                     def scannerHome = tool 'sonar-scanner'
                     
                     withSonarQubeEnv('SonarQube') {
@@ -66,7 +65,6 @@ pipeline {
         stage('Update GitOps Manifests') {
             steps {
                 script {
-                    // Update tag image di k8s manifest sesuai BUILD_NUMBER
                     sh """
                         sed -i 's|${HARBOR_REGISTRY}/${HARBOR_PROJECT}/backend:.*|${HARBOR_REGISTRY}/${HARBOR_PROJECT}/backend:${BUILD_NUMBER}|g' k8s/backend-deployment.yaml
                         sed -i 's|${HARBOR_REGISTRY}/${HARBOR_PROJECT}/frontend:.*|${HARBOR_REGISTRY}/${HARBOR_PROJECT}/frontend:${BUILD_NUMBER}|g' k8s/frontend-deployment.yaml
@@ -78,7 +76,6 @@ pipeline {
                             git config user.email "ditasetyakurniawan@gmail.com"
                             git add k8s/*.yaml
                             
-                            # Cek apakah ada perubahan file sebelum commit (mencegah exit error jika tidak ada perubahan)
                             if ! git diff --cached --quiet; then
                                 git commit -m "chore(gitops): update image tags to build #${BUILD_NUMBER} [skip ci]"
                                 git push https://${GIT_USER}:${GIT_PASS}@github.com/ditasetyakurniawan-droid/absensi-v1.git HEAD:main
@@ -90,6 +87,7 @@ pipeline {
                 }
             }
         }
+    } // <-- Tanda kurung penutup 'stages' yang sebelumnya hilang
 
     post {
         always {
