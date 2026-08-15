@@ -28,7 +28,7 @@ metadata:
   name: absensi-frontend-service
   namespace: test-app
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   ports:
   - port: 80
     targetPort: 80
