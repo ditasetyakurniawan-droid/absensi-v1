@@ -2,10 +2,10 @@ pipeline {
     agent any
     
     environment {
-        HARBOR_REGISTRY = 'harbor.domainkamu.com'
+        HARBOR_REGISTRY = '192.168.100.58'
         HARBOR_PROJECT  = 'absensi'
         HARBOR_CREDS    = credentials('harbor-cred')
-        SONAR_HOST_URL  = 'http://sonarqube.domainkamu.com'
+        SONAR_HOST_URL  = 'http://192.168.100.59:9000'
         SONAR_TOKEN     = credentials('sonarqube-token')
     }
 
