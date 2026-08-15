@@ -6,7 +6,7 @@ pipeline {
         HARBOR_PROJECT  = 'absensi'
         HARBOR_CREDS    = credentials('harbor-cred')
         SONAR_HOST_URL  = 'http://sonarqube.domainkamu.com'
-        SONAR_TOKEN     = credentials('sonarqube-token-id')
+        SONAR_TOKEN     = credentials('sonarqube-token')
     }
 
     stages {
