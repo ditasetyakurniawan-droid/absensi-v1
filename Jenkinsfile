@@ -3,7 +3,7 @@ pipeline {
     
     environment {
         HARBOR_REGISTRY = '192.168.100.58'
-        HARBOR_PROJECT  = 'absensi'
+        HARBOR_PROJECT  = 'devops-apps'
         HARBOR_CREDS    = credentials('harbor-cred')
         SONAR_HOST_URL  = 'http://192.168.100.59:9000'
         SONAR_TOKEN     = credentials('sonarqube-token')
@@ -19,7 +19,6 @@ pipeline {
         stage('SonarQube Code Analysis') {
             steps {
                 script {
-                    // PERBAIKAN 1: Disamakan dengan Name di Jenkins System ('SonarQube')
                     withSonarQubeEnv('SonarQube') {
                         sh '''
                             sonar-scanner \
@@ -64,13 +63,11 @@ pipeline {
         stage('Update GitOps Manifests') {
             steps {
                 script {
-                    // Update tag image di k8s manifest sesuai BUILD_NUMBER
                     sh """
                         sed -i 's|${HARBOR_REGISTRY}/${HARBOR_PROJECT}/backend:.*|${HARBOR_REGISTRY}/${HARBOR_PROJECT}/backend:${BUILD_NUMBER}|g' k8s/backend-deployment.yaml
                         sed -i 's|${HARBOR_REGISTRY}/${HARBOR_PROJECT}/frontend:.*|${HARBOR_REGISTRY}/${HARBOR_PROJECT}/frontend:${BUILD_NUMBER}|g' k8s/frontend-deployment.yaml
                     """
                     
-                    // PERBAIKAN 2 & 3: ID Credential dan URL GitHub disesuaikan
                     withCredentials([usernamePassword(credentialsId: 'github-credentials-id', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
                         sh '''
                             git config user.name "Jenkins CI/CD"
@@ -87,8 +84,7 @@ pipeline {
 
     post {
         always {
-            // PERBAIKAN 4: Dibungkus node agar tidak MissingContextVariableException
-            node {
+            script {
                 cleanWs()
             }
         }
