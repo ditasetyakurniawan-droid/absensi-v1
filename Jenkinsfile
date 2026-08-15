@@ -4,7 +4,7 @@ pipeline {
     environment {
         HARBOR_REGISTRY = 'harbor.domainkamu.com'
         HARBOR_PROJECT  = 'absensi'
-        HARBOR_CREDS    = credentials('harbor-credentials-id')
+        HARBOR_CREDS    = credentials('harbor-cred')
         SONAR_HOST_URL  = 'http://sonarqube.domainkamu.com'
         SONAR_TOKEN     = credentials('sonarqube-token-id')
     }
@@ -38,7 +38,7 @@ pipeline {
                 script {
                     dir('backend') {
                         def backendImage = docker.build("${HARBOR_REGISTRY}/${HARBOR_PROJECT}/backend:${BUILD_NUMBER}")
-                        docker.withRegistry("https://${HARBOR_REGISTRY}", 'harbor-credentials-id') {
+                        docker.withRegistry("https://${HARBOR_REGISTRY}", 'harbor-cred') {
                             backendImage.push("${BUILD_NUMBER}")
                             backendImage.push("latest")
                         }
@@ -52,7 +52,7 @@ pipeline {
                 script {
                     dir('frontend') {
                         def frontendImage = docker.build("${HARBOR_REGISTRY}/${HARBOR_PROJECT}/frontend:${BUILD_NUMBER}")
-                        docker.withRegistry("https://${HARBOR_REGISTRY}", 'harbor-credentials-id') {
+                        docker.withRegistry("https://${HARBOR_REGISTRY}", 'harbor-cred') {
                             frontendImage.push("${BUILD_NUMBER}")
                             frontendImage.push("latest")
                         }
