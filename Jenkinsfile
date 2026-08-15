@@ -19,8 +19,8 @@ pipeline {
         stage('SonarQube Code Analysis') {
             steps {
                 script {
-                    // Running SonarScanner for Go & React codebase
-                    withSonarQubeEnv('SonarQubeServer') {
+                    // PERBAIKAN 1: Disamakan dengan Name di Jenkins System ('SonarQube')
+                    withSonarQubeEnv('SonarQube') {
                         sh '''
                             sonar-scanner \
                               -Dsonar.projectKey=absensi-sholat-rfid \
@@ -70,14 +70,14 @@ pipeline {
                         sed -i 's|${HARBOR_REGISTRY}/${HARBOR_PROJECT}/frontend:.*|${HARBOR_REGISTRY}/${HARBOR_PROJECT}/frontend:${BUILD_NUMBER}|g' k8s/frontend-deployment.yaml
                     """
                     
-                    // Commit & push perubahan manifest agar ArgoCD otomatis sync
-                    withCredentials([usernamePassword(credentialsId: 'github-access-token', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                    // PERBAIKAN 2 & 3: ID Credential dan URL GitHub disesuaikan
+                    withCredentials([usernamePassword(credentialsId: 'github-credentials-id', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
                         sh '''
                             git config user.name "Jenkins CI/CD"
                             git config user.email "jenkins@domainkamu.com"
                             git add k8s/*.yaml
                             git commit -m "chore(gitops): update image tags to build #${BUILD_NUMBER} [skip ci]" || true
-                            git push https://${GIT_USER}:${GIT_PASS}@github.com/username/absensi-sholat-rfid.git HEAD:main
+                            git push https://${GIT_USER}:${GIT_PASS}@github.com/ditasetyakurniawan-droid/absensi-v1.git HEAD:main
                         '''
                     }
                 }
@@ -87,7 +87,10 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            // PERBAIKAN 4: Dibungkus node agar tidak MissingContextVariableException
+            node {
+                cleanWs()
+            }
         }
         success {
             echo "✅ Pipeline CI/CD Selesai! ArgoCD akan segera meng-sync perubahan ke Kubernetes Cluster."
