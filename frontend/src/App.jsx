@@ -1,4 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import './App.css';
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 function App() {
   const [cardUid, setCardUid] = useState('');
@@ -13,15 +17,20 @@ function App() {
   const speakText = (text) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
+
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'id-ID';
       utterance.rate = 0.95;
+
       window.speechSynthesis.speak(utterance);
     }
   };
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
     return () => clearInterval(timer);
   }, []);
 
@@ -29,15 +38,37 @@ function App() {
     inputRef.current?.focus();
   }, [result, error]);
 
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
   const handleContainerClick = () => {
     inputRef.current?.focus();
   };
 
+  const resetNotificationTimer = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+
+    timerRef.current = setTimeout(() => {
+      setResult(null);
+      setError(null);
+      inputRef.current?.focus();
+    }, 5000);
+  };
+
   const handleTap = async (e) => {
     e.preventDefault();
-    if (!cardUid.trim()) return;
 
-    // 🟢 Hapus timer reset sebelumnya jika ada santri yang tap menyusul secara cepat
+    const uid = cardUid.trim();
+
+    if (!uid || loading) return;
+
     if (timerRef.current) {
       clearTimeout(timerRef.current);
     }
@@ -47,192 +78,295 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:8080/api/v1/attendance/tap', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ card_uid: cardUid }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/attendance/tap`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            card_uid: uid,
+          }),
+        }
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Gagal melakukan absensi');
+        throw new Error(
+          data.error || 'Gagal melakukan absensi'
+        );
       }
 
       setResult(data);
       setCardUid('');
-      speakText(`Allahuakbar!`);
+
+      speakText('Allahuakbar!');
     } catch (err) {
-      setError(err.message);
+      setError(
+        err.message || 'Terjadi kesalahan pada sistem'
+      );
+
       setCardUid('');
-      speakText(`Maaf, ${err.message}`);
+
+      speakText(
+        `Maaf, ${err.message || 'terjadi kesalahan'}`
+      );
     } finally {
       setLoading(false);
-
-      // 🟢 Simpan timer ke timerRef.current di dalam finally
-      timerRef.current = setTimeout(() => {
-        setResult(null);
-        setError(null);
-      }, 5000);
+      resetNotificationTimer();
     }
   };
 
+  const formattedTime = currentTime.toLocaleTimeString(
+    'id-ID',
+    {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }
+  );
+
+  const formattedDate = currentTime.toLocaleDateString(
+    'id-ID',
+    {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }
+  );
+
+  const tappedTime =
+    result?.tapped_at?.includes(' ')
+      ? result.tapped_at.split(' ')[1]
+      : result?.tapped_at || '';
+
   return (
-    <div 
+    <main
+      className="kiosk-page"
       onClick={handleContainerClick}
-      style={{
-        minHeight: '100vh',
-        backgroundColor: '#0f172a',
-        color: '#f8fafc',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justify: 'center',
-        padding: '20px',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        boxSizing: 'border-box'
-      }}
     >
-      {/* Main Container Card */}
-      <div style={{
-        width: '100%',
-        maxWidth: '420px',
-        backgroundColor: '#1e293b',
-        borderRadius: '20px',
-        border: '1px solid #334155',
-        padding: '28px 24px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-        textAlign: 'center',
-        boxSizing: 'border-box'
-      }}>
+      <div className="kiosk-background kiosk-background-one" />
+      <div className="kiosk-background kiosk-background-two" />
 
-        {/* Header */}
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>🕌</div>
-          <h1 style={{ fontSize: '22px', fontWeight: 'bold', margin: '0 0 4px 0', color: '#38bdf8' }}>
-            PESANTREN ZABISA
-          </h1>
-          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Presensi Sholat Berjamaah</p>
-          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#e2e8f0', marginTop: '8px' }}>
-            {currentTime.toLocaleTimeString('id-ID')}
-          </div>
-        </div>
+      <section className="kiosk-shell">
 
-        {/* Form Input Tap */}
-        <form onSubmit={handleTap} style={{ marginBottom: '20px' }}>
-          <input
-            ref={inputRef}
-            type="text"
-            value={cardUid}
-            onChange={(e) => setCardUid(e.target.value)}
-            placeholder="Scan / Tap Kartu Santri..."
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              backgroundColor: '#0f172a',
-              border: '2px solid #38bdf8',
-              borderRadius: '12px',
-              color: '#38bdf8',
-              fontSize: '15px',
-              textAlign: 'center',
-              outline: 'none',
-              boxSizing: 'border-box'
-            }}
-            autoFocus
-          />
-        </form>
+        {/* HEADER */}
+        <header className="kiosk-topbar">
+          <div className="brand-area">
 
-        {/* Loading */}
-        {loading && (
-          <p style={{ color: '#fbbf24', fontSize: '14px', margin: '16px 0' }}>
-            ⏳ Mengecek Data Santri...
-          </p>
-        )}
-
-        {/* Card Result: SUKSES (Presisi & Seimbang) */}
-        {result && (
-          <div style={{
-            backgroundColor: 'rgba(6, 78, 59, 0.4)',
-            border: '1px solid #10b981',
-            borderRadius: '16px',
-            padding: '20px',
-            marginTop: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '12px'
-          }}>
-            {/* Frame Foto Pas: 110px x 110px */}
-            <div style={{
-              width: '110px',
-              height: '110px',
-              borderRadius: '50%',
-              border: '3px solid #10b981',
-              backgroundColor: '#0f172a',
-              overflow: 'hidden',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-            }}>
-              <img 
-                src={result.photo_url || 'https://via.placeholder.com/150'} 
-                alt={result.full_name} 
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            {/* LOGO ZABISA */}
+            <div className="brand-icon">
+              <img
+                src="/zabisa-logo.png"
+                alt="Logo ZABISA"
+                className="brand-logo-image"
               />
             </div>
 
-            {/* Info Santri */}
-            <div>
-              <span style={{
-                backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                color: '#34d399',
-                fontSize: '11px',
-                fontWeight: 'bold',
-                textTransform: 'uppercase',
-                padding: '4px 12px',
-                borderRadius: '12px',
-                border: '1px solid #10b981',
-                display: 'inline-block',
-                marginBottom: '8px'
-              }}>
-                Sholat {result.prayer_name}
+            <div className="brand-copy">
+              <span className="brand-eyebrow">
+                SISTEM PRESENSI DIGITAL
               </span>
-              <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#ffffff', margin: '4px 0' }}>
-                {result.full_name}
-              </h2>
-              <p style={{ fontSize: '14px', color: '#cbd5e1', margin: '0 0 8px 0' }}>
-                {result.classroom}
-              </p>
-              <div style={{ fontSize: '12px', color: '#34d399', fontWeight: '500' }}>
-                ✅ Absensi Berhasil ({result.tapped_at.split(' ')[1]})
-              </div>
+
+              <h1>PESANTREN ZABISA</h1>
+
+              <p>Presensi Sholat Berjamaah</p>
             </div>
           </div>
-        )}
 
-        {/* Card Result: ERROR */}
-        {error && (
-          <div style={{
-            backgroundColor: 'rgba(127, 29, 29, 0.4)',
-            border: '1px solid #f43f5e',
-            borderRadius: '16px',
-            padding: '16px',
-            marginTop: '16px',
-            color: '#fecdd3'
-          }}>
-            <div style={{ fontSize: '24px', marginBottom: '4px' }}>❌</div>
-            <div style={{ fontWeight: 'bold', fontSize: '15px' }}>Absensi Gagal</div>
-            <div style={{ fontSize: '13px', marginTop: '4px' }}>{error}</div>
+          <div className="system-status">
+            <span className="status-indicator" />
+            <span>Sistem Online</span>
           </div>
-        )}
+        </header>
 
-      </div>
+        {/* CONTENT */}
+        <div className="kiosk-content">
 
-      <p style={{ fontSize: '12px', color: '#64748b', marginTop: '20px' }}>
-        Klik sembarang area layar jika sensor RFID tidak merespon.
-      </p>
-    </div>
+          {/* JAM */}
+          <section className="clock-section">
+            <span className="clock-label">
+              WAKTU SEKARANG
+            </span>
+
+            <div className="digital-clock">
+              {formattedTime}
+            </div>
+
+            <div className="current-date">
+              {formattedDate}
+            </div>
+          </section>
+
+          {/* RFID */}
+          <section
+            className={`tap-panel ${
+              loading ? 'tap-panel-loading' : ''
+            }`}
+          >
+            <div className="rfid-visual">
+              <div className="rfid-ring rfid-ring-one" />
+              <div className="rfid-ring rfid-ring-two" />
+
+              <div className="rfid-card">
+                <div className="rfid-chip">
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </div>
+            </div>
+
+            <h2>
+              {loading
+                ? 'Memeriksa Kartu...'
+                : 'Tempelkan Kartu Santri'}
+            </h2>
+
+            <p>
+              Dekatkan kartu RFID pada reader untuk melakukan
+              presensi sholat berjamaah.
+            </p>
+
+            <form
+              onSubmit={handleTap}
+              className="rfid-form"
+            >
+              <input
+                ref={inputRef}
+                type="text"
+                value={cardUid}
+                onChange={(e) =>
+                  setCardUid(e.target.value)
+                }
+                placeholder="UID kartu akan terbaca di sini..."
+                autoComplete="off"
+                spellCheck="false"
+                autoFocus
+              />
+
+              <button
+                type="submit"
+                disabled={loading || !cardUid.trim()}
+              >
+                {loading ? (
+                  <>
+                    <span className="button-spinner" />
+                    Memproses
+                  </>
+                ) : (
+                  'Proses Kartu'
+                )}
+              </button>
+            </form>
+
+            <div className="reader-status">
+              <span className="reader-dot" />
+
+              <span>
+                RFID Reader siap menerima kartu
+              </span>
+            </div>
+          </section>
+
+          {/* SUKSES */}
+          {result && (
+            <section className="notification-card success-card">
+              <div className="notification-status-icon success-icon">
+                ✓
+              </div>
+
+              <div className="student-photo-wrapper">
+                <img
+                  src={
+                    result.photo_url ||
+                    'https://via.placeholder.com/180'
+                  }
+                  alt={result.full_name}
+                  className="student-photo"
+                />
+
+                <span className="success-check">
+                  ✓
+                </span>
+              </div>
+
+              <div className="student-information">
+                <span className="prayer-badge">
+                  SHOLAT {result.prayer_name}
+                </span>
+
+                <h2>{result.full_name}</h2>
+
+                <p className="student-class">
+                  {result.classroom}
+                </p>
+
+                <div className="success-message">
+                  <span>✓</span>
+                  Presensi berhasil dicatat
+                </div>
+
+                {tappedTime && (
+                  <span className="tap-time">
+                    Tercatat pukul {tappedTime}
+                  </span>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* ERROR */}
+          {error && (
+            <section className="notification-card error-card">
+              <div className="notification-status-icon error-icon">
+                !
+              </div>
+
+              <div className="error-content">
+                <span className="error-eyebrow">
+                  PRESENSI GAGAL
+                </span>
+
+                <h2>
+                  Kartu Tidak Dapat Diproses
+                </h2>
+
+                <p>{error}</p>
+
+                <span className="error-help">
+                  Silakan tempelkan kembali kartu atau hubungi
+                  petugas.
+                </span>
+              </div>
+            </section>
+          )}
+        </div>
+
+        {/* FOOTER */}
+        <footer className="kiosk-footer">
+          <div>
+            <span className="footer-dot" />
+            RFID Reader aktif
+          </div>
+
+          <div>
+            Klik area layar jika reader tidak merespons.
+          </div>
+
+          <a
+            href="/admin"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Dashboard Admin →
+          </a>
+        </footer>
+      </section>
+    </main>
   );
 }
 

@@ -24,16 +24,14 @@ services:
     container_name: absensi_backend_local
     restart: always
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
-      - DB_HOST=db
+      - DB_HOST=192.168.100.70
       - DB_PORT=3306
       - DB_USER=root
       - DB_PASSWORD=dita12345
       - DB_NAME=db_absensi
       - SERVER_PORT=8080
-    depends_on:
-      - db
 
   # 3. Frontend React/Nginx (Build dari Dockerfile frontend)
   frontend:

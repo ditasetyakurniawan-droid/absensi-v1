@@ -1,249 +1,1209 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import './Dashboard.css';
+import LiveTapActivity from './LiveTapActivity.jsx';
 
-// Ambil URL Backend dari Environment Variable (Vite/React)
-// Jika variabel VITE_API_BASE_URL tidak diset, otomatis memakai fallback localhost
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
-export default function Dashboard() {
-  const [stats, setStats] = useState({ total_students: 0, current_prayer: '', present_count: 0, recent_taps: [] });
-  const [activeTab, setActiveTab] = useState('daily'); // 'daily' atau 'monthly'
-  
-  // Filter Harian
-  const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
+const PRAYERS = ['Subuh', 'Dzuhur', 'Asar', 'Magrib', 'Isya'];
+
+const MONTHS = [
+  ['01', 'Januari'],
+  ['02', 'Februari'],
+  ['03', 'Maret'],
+  ['04', 'April'],
+  ['05', 'Mei'],
+  ['06', 'Juni'],
+  ['07', 'Juli'],
+  ['08', 'Agustus'],
+  ['09', 'September'],
+  ['10', 'Oktober'],
+  ['11', 'November'],
+  ['12', 'Desember'],
+];
+
+/* =====================================================
+   BASE SVG ICON
+===================================================== */
+
+function SvgIcon({
+  children,
+  size = 20,
+  viewBox = '0 0 24 24',
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={viewBox}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      style={{
+        display: 'block',
+        flexShrink: 0,
+      }}
+    >
+      {children}
+    </svg>
+  );
+}
+
+/* =====================================================
+   ICON - DASHBOARD
+===================================================== */
+
+function DashboardIcon({ size = 18 }) {
+  return (
+    <SvgIcon size={size}>
+      <rect
+        x="3"
+        y="3"
+        width="7"
+        height="7"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <rect
+        x="14"
+        y="3"
+        width="7"
+        height="7"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <rect
+        x="3"
+        y="14"
+        width="7"
+        height="7"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <rect
+        x="14"
+        y="14"
+        width="7"
+        height="7"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+    </SvgIcon>
+  );
+}
+
+/* =====================================================
+   ICON - ACTIVITY
+===================================================== */
+
+function ActivityIcon({ size = 18 }) {
+  return (
+    <SvgIcon size={size}>
+      <path
+        d="M3 12H7L9.3 6L13.3 18L16 10L18 12H21"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </SvgIcon>
+  );
+}
+
+/* =====================================================
+   ICON - REPORT
+===================================================== */
+
+function ReportIcon({ size = 18 }) {
+  return (
+    <SvgIcon size={size}>
+      <rect
+        x="5"
+        y="3"
+        width="14"
+        height="18"
+        rx="2.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M8.5 8H15.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8.5 12H15.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8.5 16H13"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </SvgIcon>
+  );
+}
+
+/* =====================================================
+   ICON - MONITOR
+===================================================== */
+
+function MonitorIcon({ size = 18 }) {
+  return (
+    <SvgIcon size={size}>
+      <rect
+        x="3"
+        y="4"
+        width="18"
+        height="13"
+        rx="2.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M8 21H16"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12 17V21"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </SvgIcon>
+  );
+}
+
+/* =====================================================
+   ICON - USERS
+===================================================== */
+
+function UsersIcon({ size = 20 }) {
+  return (
+    <SvgIcon size={size}>
+      <path
+        d="M16 21V19C16 16.8 14.2 15 12 15H7C4.8 15 3 16.8 3 19V21"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <circle
+        cx="9.5"
+        cy="7"
+        r="4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M16 4.2C17.7 4.7 19 6.3 19 8.2C19 10.1 17.7 11.7 16 12.2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M18 15.4C19.8 16.1 21 17.7 21 19.5V21"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </SvgIcon>
+  );
+}
+
+/* =====================================================
+   ICON - MOON
+===================================================== */
+
+function MoonIcon({ size = 20 }) {
+  return (
+    <SvgIcon size={size}>
+      <path
+        d="M20.2 15.1C18.9 15.7 17.5 16 16 16C11.6 16 8 12.4 8 8C8 6.5 8.4 5 9.1 3.8C5.6 5 3 8.3 3 12.2C3 17.1 6.9 21 11.8 21C15.6 21 18.9 18.6 20.2 15.1Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </SvgIcon>
+  );
+}
+
+/* =====================================================
+   ICON - CHECK
+===================================================== */
+
+function CheckCircleIcon({ size = 20 }) {
+  return (
+    <SvgIcon size={size}>
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M8 12.2L10.7 15L16.5 9"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </SvgIcon>
+  );
+}
+
+/* =====================================================
+   ICON - CHART
+===================================================== */
+
+function ChartIcon({ size = 20 }) {
+  return (
+    <SvgIcon size={size}>
+      <path
+        d="M4 20V14"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M10 20V9"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M16 20V4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M3 20H21"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </SvgIcon>
+  );
+}
+
+/* =====================================================
+   MAIN DASHBOARD
+===================================================== */
+
+function Dashboard() {
+  const [stats, setStats] = useState({
+    total_students: 0,
+    current_prayer: '',
+    present_count: 0,
+    recent_taps: [],
+  });
+
+  const [activeTab, setActiveTab] = useState('daily');
+
+  const [filterDate, setFilterDate] = useState(
+    new Date().toISOString().split('T')[0]
+  );
+
   const [filterPrayer, setFilterPrayer] = useState('');
   const [reports, setReports] = useState([]);
 
-  // Filter Bulanan
-  const [filterMonth, setFilterMonth] = useState(String(new Date().getMonth() + 1).padStart(2, '0'));
-  const [filterYear, setFilterYear] = useState(String(new Date().getFullYear()));
+  const [filterMonth, setFilterMonth] = useState(
+    String(new Date().getMonth() + 1).padStart(2, '0')
+  );
+
+  const [filterYear, setFilterYear] = useState(
+    String(new Date().getFullYear())
+  );
+
   const [monthlyReports, setMonthlyReports] = useState([]);
 
-  // Polling Real-time Live Feed
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  const [statsError, setStatsError] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
+
+  /* =====================================================
+     CLOCK
+  ===================================================== */
+
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/dashboard/today`);
-        const data = await res.json();
-        setStats(data);
-      } catch (err) {
-        console.error("Gagal memuat statistik", err);
-      }
-    };
-    fetchStats();
-    const interval = setInterval(fetchStats, 3000);
-    return () => clearInterval(interval);
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, []);
 
-  // Fetch Laporan Harian
+  /* =====================================================
+     DASHBOARD REAL-TIME
+  ===================================================== */
+
   useEffect(() => {
-    if (activeTab === 'daily') {
-      let url = `${API_BASE_URL}/api/v1/reports/attendance?date=${filterDate}`;
-      if (filterPrayer) url += `&prayer=${filterPrayer}`;
-      fetch(url).then(res => res.json()).then(data => setReports(data.records || []));
-    }
+    let mounted = true;
+
+    const fetchStats = async () => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/v1/dashboard/today`
+        );
+
+        if (!response.ok) {
+          throw new Error('Gagal mengambil statistik');
+        }
+
+        const data = await response.json();
+
+        if (mounted) {
+          setStats({
+            total_students: data.total_students || 0,
+            current_prayer: data.current_prayer || '',
+            present_count: data.present_count || 0,
+            recent_taps: data.recent_taps || [],
+          });
+
+          setStatsError(false);
+        }
+      } catch (error) {
+        console.error('Gagal memuat statistik:', error);
+
+        if (mounted) {
+          setStatsError(true);
+        }
+      }
+    };
+
+    fetchStats();
+
+    const interval = setInterval(fetchStats, 3000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  /* =====================================================
+     DAILY REPORT
+  ===================================================== */
+
+  useEffect(() => {
+    if (activeTab !== 'daily') return;
+
+    let cancelled = false;
+
+    const fetchDaily = async () => {
+      setReportLoading(true);
+
+      try {
+        let url =
+          `${API_BASE_URL}/api/v1/reports/attendance` +
+          `?date=${filterDate}`;
+
+        if (filterPrayer) {
+          url += `&prayer=${encodeURIComponent(filterPrayer)}`;
+        }
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error('Gagal mengambil laporan harian');
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setReports(data.records || []);
+        }
+      } catch (error) {
+        console.error(error);
+
+        if (!cancelled) {
+          setReports([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setReportLoading(false);
+        }
+      }
+    };
+
+    fetchDaily();
+
+    return () => {
+      cancelled = true;
+    };
   }, [filterDate, filterPrayer, activeTab]);
 
-  // Fetch Laporan Bulanan
+  /* =====================================================
+     MONTHLY REPORT
+  ===================================================== */
+
   useEffect(() => {
-    if (activeTab === 'monthly') {
-      fetch(`${API_BASE_URL}/api/v1/reports/monthly?month=${filterMonth}&year=${filterYear}`)
-        .then(res => res.json())
-        .then(data => setMonthlyReports(data.records || []));
-    }
+    if (activeTab !== 'monthly') return;
+
+    let cancelled = false;
+
+    const fetchMonthly = async () => {
+      setReportLoading(true);
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/v1/reports/monthly` +
+            `?month=${filterMonth}&year=${filterYear}`
+        );
+
+        if (!response.ok) {
+          throw new Error('Gagal mengambil laporan bulanan');
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setMonthlyReports(data.records || []);
+        }
+      } catch (error) {
+        console.error(error);
+
+        if (!cancelled) {
+          setMonthlyReports([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setReportLoading(false);
+        }
+      }
+    };
+
+    fetchMonthly();
+
+    return () => {
+      cancelled = true;
+    };
   }, [filterMonth, filterYear, activeTab]);
 
+  /* =====================================================
+     CALCULATION
+  ===================================================== */
+
+  const attendanceRate =
+    Number(stats.total_students) > 0
+      ? Math.round(
+          (Number(stats.present_count) /
+            Number(stats.total_students)) *
+            100
+        )
+      : 0;
+
+  const formattedDate = currentTime.toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const formattedTime = currentTime.toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+
   return (
-    <div style={{ padding: '28px', backgroundColor: '#0f172a', minHeight: '100vh', color: '#f8fafc', fontFamily: 'sans-serif', boxSizing: 'border-box' }}>
-      
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div>
-          <h1 style={{ color: '#38bdf8', margin: 0, fontSize: '24px', fontWeight: 'bold' }}>📊 Dashboard Monitoring Absensi</h1>
-          <p style={{ color: '#94a3b8', margin: '4px 0 0 0', fontSize: '14px' }}>Pesantren Zabisa - Real-time Attendance System</p>
-        </div>
-        <a href="/" style={{ color: '#38bdf8', textDecoration: 'none', backgroundColor: '#1e293b', padding: '8px 16px', borderRadius: '8px', border: '1px solid #334155', fontSize: '14px' }}>
-          🖥️ Layar Kiosk
-        </a>
-      </div>
+    <main className="admin-page">
 
-      {/* Metric Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-        <div style={{ backgroundColor: '#1e293b', padding: '20px', borderRadius: '12px', border: '1px solid #334155' }}>
-          <div style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' }}>TOTAL SANTRI</div>
-          <div style={{ fontSize: '32px', fontWeight: 'bold', marginTop: '4px', color: '#ffffff' }}>{stats.total_students}</div>
-        </div>
-        <div style={{ backgroundColor: '#1e293b', padding: '20px', borderRadius: '12px', border: '1px solid #334155' }}>
-          <div style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' }}>SHOLAT AKTIF</div>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: stats.current_prayer ? '#38bdf8' : '#ef4444', marginTop: '4px' }}>
-            {stats.current_prayer || 'Di Luar Jam Sholat'}
-          </div>
-        </div>
-        <div style={{ backgroundColor: '#1e293b', padding: '20px', borderRadius: '12px', border: '1px solid #10b981' }}>
-          <div style={{ fontSize: '12px', color: '#34d399', textTransform: 'uppercase' }}>HADIR SHOLAT AKTIF</div>
-          <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#10b981', marginTop: '4px' }}>
-            {stats.present_count} <span style={{ fontSize: '16px', color: '#94a3b8', fontWeight: 'normal' }}>Santri</span>
-          </div>
-        </div>
-      </div>
+      {/* =================================================
+          SIDEBAR
+      ================================================= */}
 
-      {/* Main Content Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.5fr', gap: '24px' }}>
-        
-        {/* Live Tap Feed */}
-        <div style={{ backgroundColor: '#1e293b', padding: '20px', borderRadius: '12px', border: '1px solid #334155' }}>
-          <h2 style={{ fontSize: '16px', color: '#f8fafc', marginBottom: '16px', marginTop: 0 }}>⚡ Live Tap Activity</h2>
-          {stats.recent_taps?.length === 0 ? (
-            <p style={{ color: '#64748b', fontSize: '14px' }}>Belum ada santri tap hari ini.</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {stats.recent_taps?.map((item) => (
-                <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', backgroundColor: '#0f172a', borderRadius: '8px', border: '1px solid #1e293b' }}>
-                  <img src={item.photo_url || 'https://via.placeholder.com/40'} alt={item.full_name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffffff' }}>{item.full_name}</div>
-                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>{item.classroom} • <span style={{ color: '#34d399' }}>{item.prayer_name}</span></div>
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#38bdf8', fontFamily: 'monospace' }}>{item.time_str}</div>
+      <aside className="admin-sidebar">
+
+        {/* BRAND */}
+
+        <div className="sidebar-brand">
+
+          <div className="sidebar-logo">
+            <img
+              src="/zabisa-logo.png"
+              alt="Logo ZABISA"
+              className="sidebar-logo-image"
+            />
+          </div>
+
+          <div className="sidebar-brand-copy">
+            <span>ZABISA</span>
+            <small>Presensi Digital</small>
+          </div>
+
+        </div>
+
+        {/* NAVIGATION */}
+
+        <nav className="sidebar-navigation">
+
+          <span className="nav-caption">
+            MENU UTAMA
+          </span>
+
+          <button className="nav-item active">
+
+            <span className="nav-icon">
+              <DashboardIcon />
+            </span>
+
+            <span>
+              Dashboard
+            </span>
+
+          </button>
+
+          <button className="nav-item">
+
+            <span className="nav-icon">
+              <ActivityIcon />
+            </span>
+
+            <span>
+              Monitoring
+            </span>
+
+          </button>
+
+          <button className="nav-item">
+
+            <span className="nav-icon">
+              <ReportIcon />
+            </span>
+
+            <span>
+              Rekap Absensi
+            </span>
+
+          </button>
+
+        </nav>
+
+        {/* BOTTOM */}
+
+        <div className="sidebar-bottom">
+
+          <a
+            href="/"
+            className="kiosk-link"
+          >
+
+            <span className="kiosk-link-icon">
+              <MonitorIcon />
+            </span>
+
+            <div>
+              <strong>
+                Layar Kiosk
+              </strong>
+
+              <small>
+                Buka halaman RFID
+              </small>
+            </div>
+
+            <b>
+              ↗
+            </b>
+
+          </a>
+
+          <div className="sidebar-system">
+
+            <span className="online-dot" />
+
+            Sistem aktif
+
+          </div>
+
+        </div>
+
+      </aside>
+
+      {/* =================================================
+          MAIN
+      ================================================= */}
+
+      <section className="admin-main">
+
+        {/* HEADER */}
+
+        <header className="admin-header">
+
+          <div className="admin-header-copy">
+
+            <span className="header-eyebrow">
+              SISTEM PRESENSI DIGITAL
+            </span>
+
+            <h1>
+              Dashboard Monitoring
+            </h1>
+
+            <p>
+              Pantau aktivitas presensi sholat santri
+              secara real-time.
+            </p>
+
+          </div>
+
+          <div className="header-right">
+
+            <div className="header-clock">
+
+              <strong>
+                {formattedTime}
+              </strong>
+
+              <span>
+                {formattedDate}
+              </span>
+
+            </div>
+
+            <div
+              className={
+                statsError
+                  ? 'connection-status error'
+                  : 'connection-status'
+              }
+            >
+
+              <span />
+
+              {statsError
+                ? 'Backend Offline'
+                : 'Sistem Online'}
+
+            </div>
+
+          </div>
+
+        </header>
+
+        {/* =================================================
+            METRIC CARDS
+        ================================================= */}
+
+        <section className="metric-grid">
+
+          {/* TOTAL SANTRI */}
+
+          <article className="metric-card">
+
+            <div className="metric-top">
+
+              <div className="metric-icon blue">
+                <UsersIcon />
+              </div>
+
+              <span className="metric-label">
+                TOTAL SANTRI
+              </span>
+
+            </div>
+
+            <strong className="metric-number">
+              {stats.total_students}
+            </strong>
+
+            <span className="metric-description">
+              Santri terdaftar
+            </span>
+
+          </article>
+
+          {/* SHOLAT AKTIF */}
+
+          <article className="metric-card">
+
+            <div className="metric-top">
+
+              <div className="metric-icon cyan">
+                <MoonIcon />
+              </div>
+
+              <span className="metric-label">
+                SHOLAT AKTIF
+              </span>
+
+            </div>
+
+            <strong className="metric-prayer">
+              {stats.current_prayer || 'Tidak Aktif'}
+            </strong>
+
+            <span className="metric-description">
+              Sesi presensi saat ini
+            </span>
+
+          </article>
+
+          {/* SUDAH HADIR */}
+
+          <article className="metric-card green-card">
+
+            <div className="metric-top">
+
+              <div className="metric-icon green">
+                <CheckCircleIcon />
+              </div>
+
+              <span className="metric-label">
+                SUDAH HADIR
+              </span>
+
+            </div>
+
+            <strong className="metric-number green-text">
+              {stats.present_count}
+            </strong>
+
+            <span className="metric-description">
+              Santri pada sholat aktif
+            </span>
+
+          </article>
+
+          {/* KEHADIRAN */}
+
+          <article className="metric-card">
+
+            <div className="metric-top">
+
+              <div className="metric-icon violet">
+                <ChartIcon />
+              </div>
+
+              <span className="metric-label">
+                KEHADIRAN
+              </span>
+
+            </div>
+
+            <div className="rate-row">
+
+              <strong className="metric-number">
+                {attendanceRate}%
+              </strong>
+
+              <span>
+                {stats.present_count}/
+                {stats.total_students}
+              </span>
+
+            </div>
+
+            <div className="rate-progress">
+              <div
+                style={{
+                  width: `${Math.min(
+                    attendanceRate,
+                    100
+                  )}%`,
+                }}
+              />
+            </div>
+
+          </article>
+
+        </section>
+
+        {/* =================================================
+            DASHBOARD CONTENT
+        ================================================= */}
+
+        <section className="dashboard-content">
+
+          {/* =================================================
+              LIVE TAP ACTIVITY
+          ================================================= */}
+
+          <LiveTapActivity items={stats.recent_taps} />
+
+          {/* =================================================
+              REPORT
+          ================================================= */}
+
+          <article className="panel report-panel">
+
+            {/* REPORT HEADER */}
+
+            <div className="report-header">
+
+              <div className="report-tabs">
+
+                <button
+                  className={
+                    activeTab === 'daily'
+                      ? 'active'
+                      : ''
+                  }
+                  onClick={() =>
+                    setActiveTab('daily')
+                  }
+                >
+                  Rekap Harian
+                </button>
+
+                <button
+                  className={
+                    activeTab === 'monthly'
+                      ? 'active'
+                      : ''
+                  }
+                  onClick={() =>
+                    setActiveTab('monthly')
+                  }
+                >
+                  Nilai Kedisiplinan
+                </button>
+
+              </div>
+
+              {/* FILTER */}
+
+              {activeTab === 'daily' ? (
+
+                <div className="filter-group">
+
+                  <input
+                    type="date"
+                    value={filterDate}
+                    onChange={(e) =>
+                      setFilterDate(e.target.value)
+                    }
+                  />
+
+                  <select
+                    value={filterPrayer}
+                    onChange={(e) =>
+                      setFilterPrayer(e.target.value)
+                    }
+                  >
+
+                    <option value="">
+                      Semua Sholat
+                    </option>
+
+                    {PRAYERS.map((prayer) => (
+
+                      <option
+                        value={prayer}
+                        key={prayer}
+                      >
+                        {prayer}
+                      </option>
+
+                    ))}
+
+                  </select>
+
                 </div>
-              ))}
+
+              ) : (
+
+                <div className="filter-group">
+
+                  <select
+                    value={filterMonth}
+                    onChange={(e) =>
+                      setFilterMonth(e.target.value)
+                    }
+                  >
+
+                    {MONTHS.map(
+                      ([value, label]) => (
+
+                        <option
+                          value={value}
+                          key={value}
+                        >
+                          {label}
+                        </option>
+
+                      )
+                    )}
+
+                  </select>
+
+                  <input
+                    className="year-input"
+                    type="number"
+                    min="2020"
+                    max="2100"
+                    value={filterYear}
+                    onChange={(e) =>
+                      setFilterYear(e.target.value)
+                    }
+                  />
+
+                </div>
+
+              )}
+
             </div>
-          )}
-        </div>
 
-        {/* Section Laporan & Rekap */}
-        <div style={{ backgroundColor: '#1e293b', padding: '20px', borderRadius: '12px', border: '1px solid #334155' }}>
-          
-          {/* Header Navigation Tab */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button 
-                onClick={() => setActiveTab('daily')}
-                style={{ backgroundColor: activeTab === 'daily' ? '#38bdf8' : 'transparent', color: activeTab === 'daily' ? '#0f172a' : '#94a3b8', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
-              >
-                📋 Rekap Harian
-              </button>
-              <button 
-                onClick={() => setActiveTab('monthly')}
-                style={{ backgroundColor: activeTab === 'monthly' ? '#38bdf8' : 'transparent', color: activeTab === 'monthly' ? '#0f172a' : '#94a3b8', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
-              >
-                🏆 Nilai Kedisiplinan (30 Hari)
-              </button>
-            </div>
+            {/* =================================================
+                TABLE
+            ================================================= */}
 
-            {/* Filter Control sesuai Tab */}
-            {activeTab === 'daily' ? (
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={{ backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff', padding: '6px 12px', borderRadius: '6px', fontSize: '13px' }} />
-                <select value={filterPrayer} onChange={(e) => setFilterPrayer(e.target.value)} style={{ backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff', padding: '6px 12px', borderRadius: '6px', fontSize: '13px' }}>
-                  <option value="">Semua Sholat</option>
-                  <option value="Subuh">Subuh</option>
-                  <option value="Dzuhur">Dzuhur</option>
-                  <option value="Asar">Asar</option>
-                  <option value="Magrib">Magrib</option>
-                  <option value="Isya">Isya</option>
-                </select>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} style={{ backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff', padding: '6px 12px', borderRadius: '6px', fontSize: '13px' }}>
-                  <option value="01">Januari</option>
-                  <option value="02">Februari</option>
-                  <option value="03">Maret</option>
-                  <option value="04">April</option>
-                  <option value="05">Mei</option>
-                  <option value="06">Juni</option>
-                  <option value="07">Juli</option>
-                  <option value="08">Agustus</option>
-                  <option value="09">September</option>
-                  <option value="10">Oktober</option>
-                  <option value="11">November</option>
-                  <option value="12">Desember</option>
-                </select>
-                <input type="number" value={filterYear} onChange={(e) => setFilterYear(e.target.value)} style={{ backgroundColor: '#0f172a', border: '1px solid #334155', color: '#fff', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', width: '80px' }} />
-              </div>
-            )}
-          </div>
+            <div className="table-wrapper">
 
-          {/* TAB 1: Tabel Harian */}
-          {activeTab === 'daily' && (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid #334155', color: '#94a3b8' }}>
-                    <th style={{ padding: '10px' }}>Waktu Tap</th>
-                    <th style={{ padding: '10px' }}>Nama Santri</th>
-                    <th style={{ padding: '10px' }}>Kelas</th>
-                    <th style={{ padding: '10px' }}>Sholat</th>
-                    <th style={{ padding: '10px' }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reports.length === 0 ? (
-                    <tr><td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>Tidak ada data absensi</td></tr>
-                  ) : (
-                    reports.map((row) => (
-                      <tr key={row.id} style={{ borderBottom: '1px solid #0f172a' }}>
-                        <td style={{ padding: '10px', color: '#cbd5e1', fontFamily: 'monospace' }}>{row.tapped_at}</td>
-                        <td style={{ padding: '10px', fontWeight: 'bold', color: '#ffffff' }}>{row.full_name}</td>
-                        <td style={{ padding: '10px', color: '#cbd5e1' }}>{row.classroom}</td>
-                        <td style={{ padding: '10px', color: '#38bdf8' }}>{row.prayer_name}</td>
-                        <td style={{ padding: '10px' }}>
-                          <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', border: '1px solid #10b981' }}>{row.status}</span>
+              {reportLoading && (
+
+                <div className="table-loading">
+
+                  <span />
+
+                  Memuat data...
+
+                </div>
+
+              )}
+
+              {/* DAILY */}
+
+              {activeTab === 'daily' && (
+
+                <table className="attendance-table">
+
+                  <thead>
+                    <tr>
+                      <th>WAKTU TAP</th>
+                      <th>NAMA SANTRI</th>
+                      <th>KELAS</th>
+                      <th>SHOLAT</th>
+                      <th>STATUS</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+
+                    {!reportLoading &&
+                    reports.length === 0 ? (
+
+                      <tr>
+
+                        <td
+                          colSpan="5"
+                          className="table-empty"
+                        >
+                          Belum ada data absensi.
                         </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
 
-          {/* TAB 2: Tabel Nilai Kedisiplinan Bulanan */}
-          {activeTab === 'monthly' && (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid #334155', color: '#94a3b8' }}>
-                    <th style={{ padding: '10px' }}>Nama Santri</th>
-                    <th style={{ padding: '10px' }}>Kelas</th>
-                    <th style={{ padding: '10px' }}>Total Hadir</th>
-                    <th style={{ padding: '10px' }}>Persentase</th>
-                    <th style={{ padding: '10px' }}>Grade Kedisiplinan</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {monthlyReports.length === 0 ? (
-                    <tr><td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>Tidak ada data rekap bulanan</td></tr>
-                  ) : (
-                    monthlyReports.map((row) => (
-                      <tr key={row.student_id} style={{ borderBottom: '1px solid #0f172a' }}>
-                        <td style={{ padding: '10px', fontWeight: 'bold', color: '#ffffff' }}>{row.full_name}</td>
-                        <td style={{ padding: '10px', color: '#cbd5e1' }}>{row.classroom}</td>
-                        <td style={{ padding: '10px', color: '#38bdf8', fontWeight: 'bold' }}>{row.total_hadir} / 150 Sesi</td>
-                        <td style={{ padding: '10px', color: '#34d399', fontWeight: 'bold' }}>{row.persentase.toFixed(1)}%</td>
-                        <td style={{ padding: '10px' }}>
-                          <span style={{
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: 'bold',
-                            backgroundColor: row.persentase >= 75 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                            color: row.persentase >= 75 ? '#34d399' : '#f87171',
-                            border: `1px solid ${row.persentase >= 75 ? '#10b981' : '#ef4444'}`
-                          }}>
-                            {row.grade}
-                          </span>
+                      </tr>
+
+                    ) : (
+
+                      reports.map((row) => (
+
+                        <tr key={row.id}>
+
+                          <td className="time-cell">
+                            {row.tapped_at}
+                          </td>
+
+                          <td>
+                            <strong>
+                              {row.full_name}
+                            </strong>
+                          </td>
+
+                          <td>
+                            {row.classroom}
+                          </td>
+
+                          <td>
+
+                            <span className="prayer-text">
+                              {row.prayer_name}
+                            </span>
+
+                          </td>
+
+                          <td>
+
+                            <span className="status-badge">
+
+                              <i />
+
+                              {row.status}
+
+                            </span>
+
+                          </td>
+
+                        </tr>
+
+                      ))
+
+                    )}
+
+                  </tbody>
+
+                </table>
+
+              )}
+
+              {/* MONTHLY */}
+
+              {activeTab === 'monthly' && (
+
+                <table className="attendance-table">
+
+                  <thead>
+                    <tr>
+                      <th>NAMA SANTRI</th>
+                      <th>KELAS</th>
+                      <th>TOTAL HADIR</th>
+                      <th>PERSENTASE</th>
+                      <th>KEDISIPLINAN</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+
+                    {!reportLoading &&
+                    monthlyReports.length === 0 ? (
+
+                      <tr>
+
+                        <td
+                          colSpan="5"
+                          className="table-empty"
+                        >
+                          Belum ada data rekap bulanan.
                         </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
 
-        </div>
-      </div>
-    </div>
+                      </tr>
+
+                    ) : (
+
+                      monthlyReports.map((row) => {
+
+                        const percentage =
+                          Number(row.persentase) || 0;
+
+                        return (
+
+                          <tr key={row.student_id}>
+
+                            <td>
+                              <strong>
+                                {row.full_name}
+                              </strong>
+                            </td>
+
+                            <td>
+                              {row.classroom}
+                            </td>
+
+                            <td>
+
+                              <strong className="attendance-total">
+                                {row.total_hadir}
+                              </strong>
+
+                              <span className="session-total">
+                                {' '}
+                                / 150
+                              </span>
+
+                            </td>
+
+                            <td>
+
+                              <div className="percentage-cell">
+
+                                <strong>
+                                  {percentage.toFixed(1)}%
+                                </strong>
+
+                                <div>
+
+                                  <span
+                                    style={{
+                                      width: `${Math.min(
+                                        percentage,
+                                        100
+                                      )}%`,
+                                    }}
+                                  />
+
+                                </div>
+
+                              </div>
+
+                            </td>
+
+                            <td>
+
+                              <span
+                                className={
+                                  percentage >= 75
+                                    ? 'grade-badge good'
+                                    : 'grade-badge bad'
+                                }
+                              >
+                                {row.grade}
+                              </span>
+
+                            </td>
+
+                          </tr>
+
+                        );
+                      })
+
+                    )}
+
+                  </tbody>
+
+                </table>
+
+              )}
+
+            </div>
+
+            {/* FOOTER */}
+
+            <footer className="report-footer">
+
+              <span>
+                {activeTab === 'daily'
+                  ? `${reports.length} data presensi`
+                  : `${monthlyReports.length} santri`}
+              </span>
+
+              <span>
+                Data diperbarui otomatis dari server
+              </span>
+
+            </footer>
+
+          </article>
+
+        </section>
+
+      </section>
+
+    </main>
   );
 }
+
+export default Dashboard;
