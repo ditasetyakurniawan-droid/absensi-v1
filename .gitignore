@@ -1,1 +1,4 @@
 .scannerwork/
+
+# Local backend environment
+backend/.env

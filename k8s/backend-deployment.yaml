@@ -5,44 +5,114 @@ metadata:
   namespace: test-app
   labels:
     app: absensi-backend
+
 spec:
   replicas: 2
+
   selector:
     matchLabels:
       app: absensi-backend
+
   template:
     metadata:
       labels:
         app: absensi-backend
+
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "absensi-backend"
+
+        # Token ServiceAccount khusus Vault
+        vault.hashicorp.com/agent-service-account-token-volume-name: "vault-token"
+
+        # TLS ke Vault
+        vault.hashicorp.com/tls-secret: "vault-ca"
+        vault.hashicorp.com/ca-cert: "/vault/tls/ca.crt"
+        vault.hashicorp.com/tls-server-name: "vault.vault.svc"
+
+        # DB USER
+        vault.hashicorp.com/agent-inject-secret-db-user: "kv/data/absensi/production/database"
+        vault.hashicorp.com/agent-inject-template-db-user: |
+          {{- with secret "kv/data/absensi/production/database" -}}
+          {{ .Data.data.DB_USER }}
+          {{- end }}
+        vault.hashicorp.com/agent-inject-perms-db-user: "0400"
+
+        # DB PASSWORD
+        vault.hashicorp.com/agent-inject-secret-db-password: "kv/data/absensi/production/database"
+        vault.hashicorp.com/agent-inject-template-db-password: |
+          {{- with secret "kv/data/absensi/production/database" -}}
+          {{ .Data.data.DB_PASSWORD }}
+          {{- end }}
+        vault.hashicorp.com/agent-inject-perms-db-password: "0400"
+
+        # DB NAME
+        vault.hashicorp.com/agent-inject-secret-db-name: "kv/data/absensi/production/database"
+        vault.hashicorp.com/agent-inject-template-db-name: |
+          {{- with secret "kv/data/absensi/production/database" -}}
+          {{ .Data.data.DB_NAME }}
+          {{- end }}
+        vault.hashicorp.com/agent-inject-perms-db-name: "0400"
+
     spec:
+      serviceAccountName: absensi-backend
+
+      volumes:
+        - name: vault-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: token
+                  expirationSeconds: 3600
+                  audience: vault
+
       containers:
-      - name: backend
-        image: 192.168.100.58/devops-apps/backend:13
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080
-        env:
-        - name: SERVER_PORT
-          value: "8080"
-        - name: DB_HOST
-          value: "192.168.100.70" # Atau nama service MySQL jika DB di dalam cluster
-        - name: DB_PORT
-          value: "3306"
-        - name: DB_USER
-          valueFrom:
-            secretKeyRef:
-              name: absensi-db-secret
-              key: DB_USER
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: absensi-db-secret
-              key: DB_PASSWORD
-        - name: DB_NAME
-          valueFrom:
-            secretKeyRef:
-              name: absensi-db-secret
-              key: DB_NAME
+        - name: backend
+          image: 192.168.100.58/devops-apps/backend:13
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 8080
+
+          env:
+            - name: SERVER_PORT
+              value: "8080"
+
+            - name: DB_HOST
+              value: "192.168.100.70"
+
+            - name: DB_PORT
+              value: "3306"
+
+            # Secret lama sementara untuk rollback
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: absensi-db-secret
+                  key: DB_USER
+
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: absensi-db-secret
+                  key: DB_PASSWORD
+
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: absensi-db-secret
+                  key: DB_NAME
+
+            # Vault secret files
+            - name: DB_USER_FILE
+              value: "/vault/secrets/db-user"
+
+            - name: DB_PASSWORD_FILE
+              value: "/vault/secrets/db-password"
+
+            - name: DB_NAME_FILE
+              value: "/vault/secrets/db-name"
+
 ---
 apiVersion: v1
 kind: Service
@@ -51,10 +121,13 @@ metadata:
   namespace: test-app
   annotations:
     metallb.universe.tf/loadBalancerIPs: 192.168.100.67
+
 spec:
   type: LoadBalancer
+
   ports:
-  - port: 8080
-    targetPort: 8080
+    - port: 8080
+      targetPort: 8080
+
   selector:
     app: absensi-backend

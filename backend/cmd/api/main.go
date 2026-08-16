@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -27,12 +28,17 @@ type Student struct {
 func main() {
 	_ = godotenv.Load()
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
-		getEnv("DB_USER", "root"),
-		getEnv("DB_PASSWORD", "dita12345"),
+	dbUser := mustGetEnvOrFile("DB_USER", "DB_USER_FILE")
+	dbPassword := mustGetEnvOrFile("DB_PASSWORD", "DB_PASSWORD_FILE")
+	dbName := mustGetEnvOrFile("DB_NAME", "DB_NAME_FILE")
+
+	dsn := fmt.Sprintf(
+		"%s:%s@tcp(%s:%s)/%s?parseTime=true",
+		dbUser,
+		dbPassword,
 		getEnv("DB_HOST", "192.168.100.70"),
 		getEnv("DB_PORT", "3306"),
-		getEnv("DB_NAME", "db_absensi"),
+		dbName,
 	)
 
 	db, err := sql.Open("mysql", dsn)
@@ -374,4 +380,34 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func mustGetEnvOrFile(envKey, fileKey string) string {
+	if filePath := os.Getenv(fileKey); filePath != "" {
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			log.Fatalf("Gagal membaca secret %s: %v", fileKey, err)
+		}
+
+		value := strings.TrimSpace(string(content))
+
+		if value == "" {
+			log.Fatalf("Secret file untuk %s kosong", envKey)
+		}
+
+		return value
+	}
+
+	if value := os.Getenv(envKey); value != "" {
+		return value
+	}
+
+	log.Fatalf(
+		"Credential %s tidak tersedia. Set %s atau %s",
+		envKey,
+		envKey,
+		fileKey,
+	)
+
+	return ""
 }
