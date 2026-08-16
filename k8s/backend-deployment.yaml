@@ -84,25 +84,6 @@ spec:
             - name: DB_PORT
               value: "3306"
 
-            # Secret lama sementara untuk rollback
-            - name: DB_USER
-              valueFrom:
-                secretKeyRef:
-                  name: absensi-db-secret
-                  key: DB_USER
-
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: absensi-db-secret
-                  key: DB_PASSWORD
-
-            - name: DB_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: absensi-db-secret
-                  key: DB_NAME
-
             # Vault secret files
             - name: DB_USER_FILE
               value: "/vault/secrets/db-user"
