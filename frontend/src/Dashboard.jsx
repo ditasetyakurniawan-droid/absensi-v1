@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import './Dashboard.css';
 import LiveTapActivity from './LiveTapActivity.jsx';
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+import { API_BASE_URL } from './api.js';
 
 const PRAYERS = ['Subuh', 'Dzuhur', 'Asar', 'Magrib', 'Isya'];
 
@@ -590,7 +588,20 @@ function Dashboard() {
             </span>
 
           </button>
+          <button
+            className="nav-item"
+            onClick={() => {
+              window.location.href = '/admin/students';
+            }}
+          >
+            <span className="nav-icon">
+              <UsersIcon size={18} />
+            </span>
 
+            <span>
+              Data Santri & RFID
+            </span>
+          </button>
         </nav>
 
         {/* BOTTOM */}

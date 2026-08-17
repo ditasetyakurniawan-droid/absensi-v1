@@ -1,31 +1,25 @@
-# Stage 1: Build Stage (Golang 1.22 Alpine)
+# Stage 1: Build backend
 FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
-# Copy dependency files
 COPY go.mod go.sum ./
 ENV GOTOOLCHAIN=auto
 RUN go mod download
 
-# Copy source code
 COPY . .
 
-# Build static binary Go tanpa CGO agar sangat ringan dan portabel
-RUN CGO_ENABLED=0 GOOS=linux go build -o main cmd/api/main.go
+# Build the whole package, not only main.go. This includes auth.go, admin.go, etc.
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o main ./cmd/api
 
-# Stage 2: Final Minimalist Production Image
+# Stage 2: Runtime
 FROM alpine:latest
 
-# Install ca-certificates untuk koneksi HTTPS keluar jika diperlukan
 RUN apk --no-cache add ca-certificates tzdata
 ENV TZ=Asia/Jakarta
 
 WORKDIR /app
-
-# Copy binary yang sudah di-compile dari stage builder
 COPY --from=builder /app/main .
 
 EXPOSE 8080
-
 CMD ["./main"]

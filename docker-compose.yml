@@ -1,45 +1,57 @@
-version: '3.8'
-
 services:
-  # 1. Database MySQL (Mock DB Lokal)
   db:
     image: mysql:8.0
     container_name: absensi_db_local
-    restart: always
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: dita12345
-      MYSQL_DATABASE: db_absensi
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${DB_NAME:-db_absensi}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      # Automatis import schema saat container DB pertama kali dibuat
-      - ./backend/db/migrations/000001_init_schema.up.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/db/migrations/000001_init_schema.up.sql:/docker-entrypoint-initdb.d/000001_init_schema.sql:ro
+      - ./backend/db/migrations/000002_v1_1_admin_rfid.up.sql:/docker-entrypoint-initdb.d/000002_v1_1_admin_rfid.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
-  # 2. Backend Go (Build dari Dockerfile backend)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: absensi_backend_local
-    restart: always
+    restart: unless-stopped
     ports:
       - "8081:8080"
     environment:
-      - DB_HOST=192.168.100.70
-      - DB_PORT=3306
-      - DB_USER=root
-      - DB_PASSWORD=dita12345
-      - DB_NAME=db_absensi
-      - SERVER_PORT=8080
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      DB_NAME: ${DB_NAME:-db_absensi}
+      SERVER_PORT: "8080"
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      ADMIN_BOOTSTRAP_USERNAME: ${ADMIN_BOOTSTRAP_USERNAME:-}
+      ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:-}
+      ADMIN_BOOTSTRAP_FULL_NAME: ${ADMIN_BOOTSTRAP_FULL_NAME:-Administrator ZABISA}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      default:
+        aliases:
+          - absensi-backend-service
 
-  # 3. Frontend React/Nginx (Build dari Dockerfile frontend)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: absensi_frontend_local
-    restart: always
+    restart: unless-stopped
     ports:
       - "80:80"
     depends_on:
