@@ -1,0 +1,112 @@
+.admin-login-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background:
+    radial-gradient(circle at 10% 20%, rgba(39, 115, 255, 0.16), transparent 34%),
+    radial-gradient(circle at 90% 80%, rgba(46, 196, 182, 0.13), transparent 32%),
+    #f4f7fb;
+  color: #172033;
+}
+
+.admin-login-card {
+  width: min(100%, 460px);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(26, 55, 91, 0.09);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 24px 70px rgba(35, 57, 92, 0.14);
+}
+
+.admin-login-brand {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 34px;
+}
+
+.admin-login-brand img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+
+.admin-login-brand span,
+.admin-login-copy p {
+  color: #7a879b;
+  font-size: 12px;
+}
+
+.admin-login-brand h1,
+.admin-login-copy h2 {
+  margin: 4px 0 0;
+}
+
+.admin-login-copy {
+  margin-bottom: 24px;
+}
+
+.admin-login-copy p {
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+
+.admin-login-form {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-login-form label {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-login-form input {
+  width: 100%;
+  border: 1px solid #dce3ed;
+  border-radius: 12px;
+  padding: 13px 14px;
+  font: inherit;
+  outline: none;
+  background: #fbfcfe;
+}
+
+.admin-login-form input:focus {
+  border-color: #3978ff;
+  box-shadow: 0 0 0 4px rgba(57, 120, 255, 0.1);
+}
+
+.admin-login-form button {
+  border: 0;
+  border-radius: 12px;
+  padding: 14px 18px;
+  font: inherit;
+  font-weight: 800;
+  background: #1f67eb;
+  color: white;
+  cursor: pointer;
+}
+
+.admin-login-form button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.admin-login-error {
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #fff1f2;
+  color: #b42318;
+  font-size: 13px;
+}
+
+.admin-login-kiosk {
+  display: inline-block;
+  margin-top: 24px;
+  color: #657289;
+  text-decoration: none;
+  font-size: 13px;
+}
