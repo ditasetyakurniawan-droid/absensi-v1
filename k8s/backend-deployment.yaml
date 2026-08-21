@@ -68,7 +68,7 @@ spec:
 
       containers:
         - name: backend
-          image: harbor-dt/devops-apps/backend:16
+          image: harbor-dt.co.id/devops-apps/backend:16
           imagePullPolicy: Always
 
           ports:
