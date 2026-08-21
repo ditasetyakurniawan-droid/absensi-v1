@@ -68,7 +68,7 @@ spec:
 
       containers:
         - name: backend
-          image: 192.168.100.58/devops-apps/backend:16
+          image: harbor-dt/devops-apps/backend:16
           imagePullPolicy: Always
 
           ports:
@@ -79,7 +79,7 @@ spec:
               value: "8080"
 
             - name: DB_HOST
-              value: "192.168.100.70"
+              value: "db-dt"
 
             - name: DB_PORT
               value: "3306"

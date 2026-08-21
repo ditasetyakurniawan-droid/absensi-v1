@@ -2,10 +2,10 @@ pipeline {
     agent any
     
     environment {
-        HARBOR_REGISTRY = '192.168.100.58'
+        HARBOR_REGISTRY = 'harbor-dt'
         HARBOR_PROJECT  = 'devops-apps'
         HARBOR_CREDS    = credentials('harbor-cred')
-        SONAR_HOST_URL  = 'http://192.168.100.59:9000'
+        SONAR_HOST_URL  = 'http://sonar-dt:9000'
         SONAR_TOKEN     = credentials('sonarqube-token')
     }
 
