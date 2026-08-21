@@ -71,7 +71,7 @@ spec:
         - "db-dt"
       containers:
         - name: backend
-          image: harbor-dt.co.id/devops-apps/backend:16
+          image: harbor-dt.co.id/devops-apps/backend:24
           imagePullPolicy: Always
 
           ports:
