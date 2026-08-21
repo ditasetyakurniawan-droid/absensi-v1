@@ -65,10 +65,13 @@ spec:
                   path: token
                   expirationSeconds: 3600
                   audience: vault
-
+      hostAliases:
+      - ip: "192.168.100.70"
+        hostnames:
+        - "db-dt"
       containers:
         - name: backend
-          image: harbor-dt.co.id/devops-apps/backend:23
+          image: harbor-dt.co.id/devops-apps/backend:16
           imagePullPolicy: Always
 
           ports:
