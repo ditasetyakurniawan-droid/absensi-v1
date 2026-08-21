@@ -39,7 +39,7 @@ pipeline {
                 script {
                     dir('backend') {
                         def backendImage = docker.build("${HARBOR_REGISTRY}/${HARBOR_PROJECT}/backend:${BUILD_NUMBER}")
-                        docker.withRegistry("https://${HARBOR_REGISTRY}", 'harbor-cred') {
+                        docker.withRegistry("http://${HARBOR_REGISTRY}", 'harbor-cred') {
                             backendImage.push("${BUILD_NUMBER}")
                             backendImage.push("latest")
                         }
@@ -53,7 +53,7 @@ pipeline {
                 script {
                     dir('frontend') {
                         def frontendImage = docker.build("${HARBOR_REGISTRY}/${HARBOR_PROJECT}/frontend:${BUILD_NUMBER}")
-                        docker.withRegistry("https://${HARBOR_REGISTRY}", 'harbor-cred') {
+                        docker.withRegistry("http://${HARBOR_REGISTRY}", 'harbor-cred') {
                             frontendImage.push("${BUILD_NUMBER}")
                             frontendImage.push("latest")
                         }
